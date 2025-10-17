@@ -1,8 +1,18 @@
 import express from "express";
 import os from "os";
+import morgan from 'morgan';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Simple application logger helper
+function appLog(...args) {
+  const ts = new Date().toISOString();
+  console.log('[app]', ts, ...args);
+}
+
+// HTTP request logging
+app.use(morgan(':remote-addr - :method :url :status :res[content-length] - :response-time ms'));
 
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -73,7 +83,7 @@ app.get("/", (req, res) => {
 });
 
 
-app.get("/ip", (req, res) => {
+app.get("/fashion", (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
   res.send(`<!doctype html>
 <html>
@@ -184,7 +194,12 @@ app.get('/plex', (req, res) => {
   const ip = getLocalIPv4();
   const url = `http://${ip}:32400/`;
   // temporary redirect to the Plex web port on the local IP
+  appLog('redirecting to plex at', url, 'from', req.ip);
   res.redirect(url);
 });
 
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+app.listen(PORT, () => {
+  appLog(`Listening on port ${PORT}`);
+  const ip = getLocalIPv4();
+  appLog(`Plex redirect target when /plex is used: http://${ip}:32400/`);
+});
