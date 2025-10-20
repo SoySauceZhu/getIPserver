@@ -5,14 +5,37 @@ import morgan from 'morgan';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Simple application logger helper
+// ====== 可配置部分 ======
+const PUBLIC_PLEX_URL = process.env.PUBLIC_PLEX_URL || 'https://plex.soysauces.xyz/';
+const LOCAL_PLEX_PORT = process.env.PLEX_PORT || 32400;
+// =========================
+
+app.set('trust proxy', true);
+
+// 简单日志函数
 function appLog(...args) {
   const ts = new Date().toISOString();
   console.log('[app]', ts, ...args);
 }
 
-// HTTP request logging
+// HTTP请求日志
 app.use(morgan(':remote-addr - :method :url :status :res[content-length] - :response-time ms'));
+
+// 获取本机 IPv4 地址（第一个非 internal）
+function getLocalIPv4() {
+  const nets = os.networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      const family = typeof net.family === 'string' ? net.family : String(net.family);
+      if (family.includes('4') && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+// ---------- 页面路由 ----------
 
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -20,7 +43,7 @@ app.get("/", (req, res) => {
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Plex Launcher</title>
+    <title>Plex Gateway</title>
     <style>
       body {
         font-family: system-ui, -apple-system, Arial, sans-serif;
@@ -46,8 +69,13 @@ app.get("/", (req, res) => {
         max-width: 480px;
       }
 
+      .buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+      }
+
       button {
-        margin-top: 1.5rem;
         padding: 0.8rem 1.6rem;
         font-size: 1.1rem;
         font-weight: 600;
@@ -75,13 +103,17 @@ app.get("/", (req, res) => {
   </head>
   <body>
     <h1>Welcome to Your Plex Gateway</h1>
-    <p>Click below to open your Plex server on your local network.</p>
-    <button onclick="window.location='/plex'">Open Plex Server</button>
+    <p>Select how you want to access your Plex server:</p>
+
+    <div class="buttons">
+      <button onclick="window.location='/local'">Access via Local Network</button>
+      <button onclick="window.location='${PUBLIC_PLEX_URL}'">Access via Public Link</button>
+    </div>
+
     <footer>Powered by Node.js + Express + Cloudflare Tunnel</footer>
   </body>
 </html>`);
 });
-
 
 app.get("/fashion", (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -166,40 +198,28 @@ app.get("/fashion", (req, res) => {
   <body>
     <marquee behavior="alternate" scrollamount="10">🎉🎉 WELCOME TO THE FUTURE OF PLEX 🎉🎉</marquee>
     <h1>💾 PLEX ACCESS PORTAL 💾</h1>
-    <p>Click the MAGICAL BUTTON below to enter your <b>SUPER AWESOME LOCAL PLEX SERVER!</b></p>
-    <button onclick="window.location='/plex'">ENTER NOW 🚀</button>
+    <p>Choose your gateway below:</p>
+    <div style="margin-top:20px;">
+      <button onclick="window.location='/local'">🏠 Local Network</button>
+      <button onclick="window.location='${PUBLIC_PLEX_URL}'">🌐 Public Access</button>
+    </div>
     <marquee direction="right" behavior="scroll" scrollamount="7">⚡ Fast! ⚡ Secure! ⚡ Totally 1999! ⚡</marquee>
     <footer>© 1999-2025 Soysacue Zhu™ | Best viewed in Internet Explorer 6 | <blink>Under Construction 🚧</blink></footer>
   </body>
 </html>`);
 });
 
-
-function getLocalIPv4() {
-  const nets = os.networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name]) {
-      // in Node.js >= 18, net.family can be 'IPv4' or 4 depending on platform
-      const family = typeof net.family === 'string' ? net.family : String(net.family);
-      if (family.includes('4') && !net.internal) {
-        return net.address;
-      }
-    }
-  }
-  // fallback to loopback
-  return '127.0.0.1';
-}
-
-app.get('/plex', (req, res) => {
+// 内网跳转
+app.get('/local', (req, res) => {
   const ip = getLocalIPv4();
-  const url = `http://${ip}:32400/`;
-  // temporary redirect to the Plex web port on the local IP
-  appLog('redirecting to plex at', url, 'from', req.ip);
+  const url = `http://${ip}:${LOCAL_PLEX_PORT}/`;
+  appLog('Redirecting to local Plex:', url);
   res.redirect(url);
 });
 
 app.listen(PORT, () => {
-  appLog(`Listening on port ${PORT}`);
   const ip = getLocalIPv4();
-  appLog(`Plex redirect target when /plex is used: http://${ip}:32400/`);
+  appLog(`Server listening on port ${PORT}`);
+  appLog(`Local Plex redirect target: http://${ip}:${LOCAL_PLEX_PORT}/`);
+  appLog(`Public Plex link: ${PUBLIC_PLEX_URL}`);
 });
