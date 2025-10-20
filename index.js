@@ -7,7 +7,11 @@ const PORT = process.env.PORT || 3000;
 
 // ====== 可配置部分 ======
 const PUBLIC_PLEX_URL = process.env.PUBLIC_PLEX_URL || 'https://plex.soysauces.xyz/';
+const PUBLIC_PLEX_PORT = process.env.PUBLIC_JELLYFIN_URL || 'https://jellyfin.soysauces.xyz/';
+// Jellyfin public URL (prefer explicit env, otherwise fall back to existing value)
+const PUBLIC_JELLYFIN_URL = process.env.PUBLIC_JELLYFIN_URL || PUBLIC_PLEX_PORT;
 const LOCAL_PLEX_PORT = process.env.PLEX_PORT || 32400;
+const LOCAL_JELLYFIN_PORT = process.env.JELLYFIN_PORT || 8096;
 // =========================
 
 app.set('trust proxy', true);
@@ -70,9 +74,12 @@ app.get("/", (req, res) => {
       }
 
       .buttons {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 220px));
         gap: 1rem;
         margin-top: 2rem;
+        justify-content: center;
+        align-items: center;
       }
 
       button {
@@ -105,9 +112,11 @@ app.get("/", (req, res) => {
     <h1>Welcome to Your Plex Gateway</h1>
     <p>Select how you want to access your Plex server:</p>
 
-    <div class="buttons">
-      <button onclick="window.location='/local'">Access via Local Network</button>
-      <button onclick="window.location='${PUBLIC_PLEX_URL}'">Access via Public Link</button>
+    <div class="buttons" role="group" aria-label="Gateway buttons">
+      <button onclick="window.location='/local/plex'">PLEX Local</button>
+      <button onclick="window.location='${PUBLIC_PLEX_URL}'">PLEX Public</button>
+      <button onclick="window.location='/local/jellyfin'">JELLYFIN Local</button>
+      <button onclick="window.location='${PUBLIC_JELLYFIN_URL}'">JELLYFIN Public</button>
     </div>
 
     <footer>Powered by Node.js + Express + Cloudflare Tunnel</footer>
@@ -161,14 +170,23 @@ app.get("/fashion", (req, res) => {
         border: 3px groove cyan;
       }
 
-      button {
-        font-size: 2rem;
+      .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 260px));
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      .button-grid button {
+        font-size: 1.4rem;
         font-weight: bold;
         background: radial-gradient(circle, #ff0000, #ff9900, #ffff00);
         border: 5px outset #fff;
         border-radius: 10px;
         color: #000;
-        padding: 15px 30px;
+        padding: 12px 18px;
         cursor: pointer;
         text-transform: uppercase;
         box-shadow: 5px 5px 10px #000;
@@ -199,9 +217,11 @@ app.get("/fashion", (req, res) => {
     <marquee behavior="alternate" scrollamount="10">🎉🎉 WELCOME TO THE FUTURE OF PLEX 🎉🎉</marquee>
     <h1>💾 PLEX ACCESS PORTAL 💾</h1>
     <p>Choose your gateway below:</p>
-    <div style="margin-top:20px;">
-      <button onclick="window.location='/local'">🏠 Local Network</button>
-      <button onclick="window.location='${PUBLIC_PLEX_URL}'">🌐 Public Access</button>
+    <div class="button-grid" role="group" aria-label="Fashion gateway buttons">
+      <button onclick="window.location='/local'">Plex Local</button>
+      <button onclick="window.location='${PUBLIC_PLEX_URL}'">Plex Public</button>
+      <button onclick="window.location='/local/jellyfin'">Jellyfin Local</button>
+      <button onclick="window.location='${PUBLIC_JELLYFIN_URL}'">Jellyfin Public</button>
     </div>
     <marquee direction="right" behavior="scroll" scrollamount="7">⚡ Fast! ⚡ Secure! ⚡ Totally 1999! ⚡</marquee>
     <footer>© 1999-2025 Soysacue Zhu™ | Best viewed in Internet Explorer 6 | <blink>Under Construction 🚧</blink></footer>
@@ -210,10 +230,18 @@ app.get("/fashion", (req, res) => {
 });
 
 // 内网跳转
-app.get('/local', (req, res) => {
+app.get('/local/plex', (req, res) => {
   const ip = getLocalIPv4();
   const url = `http://${ip}:${LOCAL_PLEX_PORT}/`;
   appLog('Redirecting to local Plex:', url);
+  res.redirect(url);
+});
+
+// 内网跳转 Jellyfin
+app.get('/local/jellyfin', (req, res) => {
+  const ip = getLocalIPv4();
+  const url = `http://${ip}:${LOCAL_JELLYFIN_PORT}/`;
+  appLog('Redirecting to local Jellyfin:', url);
   res.redirect(url);
 });
 
