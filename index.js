@@ -12,7 +12,7 @@ const PUBLIC_PLEX_PORT = process.env.PUBLIC_JELLYFIN_URL || 'https://jellyfin.so
 const PUBLIC_JELLYFIN_URL = process.env.PUBLIC_JELLYFIN_URL || PUBLIC_PLEX_PORT;
 const LOCAL_PLEX_PORT = process.env.PLEX_PORT || 32400;
 const LOCAL_JELLYFIN_PORT = process.env.JELLYFIN_PORT || 8096;
-const SSH_USER = process.env.SSH_USER || 'user';
+const SSH_USER = process.env.SSH_USER || 'Mingjie.Zhu22';
 // =========================
 
 app.set('trust proxy', true);
@@ -127,15 +127,15 @@ app.get("/", (req, res) => {
       function copySSHCommand() {
         // 这里的 ${lan_ip} 会在后端渲染时替换为服务器的真实 IP
         const ip = "${lan_ip}";
-        const user = "${SSH_USER}"; 
+        const user = "${SSH_USER}"; // 你可以根据需要把 user 改成变量
         const command = \`ssh -N -L 18789:127.0.0.1:18789 \${user}@\${ip}\`;
         
         // 复制到剪贴板
         navigator.clipboard.writeText(command).then(() => {
-          alert("SSH command is copied to clipboard\\n\\n" + command);
+          alert("SSH 命令已复制到剪贴板！\\n\\n" + command);
         }).catch(err => {
-          console.error('Can't copy to clipboard: ', err);
-          alert("Copy failed");
+          console.error('无法复制: ', err);
+          alert("复制失败，请手动查阅控制台。");
         });
       }
     </script>
