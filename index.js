@@ -12,6 +12,7 @@ const PUBLIC_PLEX_PORT = process.env.PUBLIC_JELLYFIN_URL || 'https://jellyfin.so
 const PUBLIC_JELLYFIN_URL = process.env.PUBLIC_JELLYFIN_URL || PUBLIC_PLEX_PORT;
 const LOCAL_PLEX_PORT = process.env.PLEX_PORT || 32400;
 const LOCAL_JELLYFIN_PORT = process.env.JELLYFIN_PORT || 8096;
+const SSH_USER = process.env.SSH_USER || 'user';
 // =========================
 
 app.set('trust proxy', true);
@@ -43,6 +44,7 @@ function getLocalIPv4() {
 
 app.get("/", (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
+  const lan_ip = getLocalIPv4();
   res.send(`<!doctype html>
 <html>
   <head>
@@ -117,7 +119,26 @@ app.get("/", (req, res) => {
       <button onclick="window.location='${PUBLIC_PLEX_URL}'">PLEX Public</button>
       <button onclick="window.location='/local/jellyfin'">JELLYFIN Local</button>
       <button onclick="window.location='${PUBLIC_JELLYFIN_URL}'">JELLYFIN Public</button>
+      <button onclick="window.location='vnc://${lan_ip}'">desktop</button>
+      <button class="btn-ssh" onclick="copySSHCommand()">SSH Tunnel</button>
     </div>
+
+    <script>
+      function copySSHCommand() {
+        // 这里的 ${lan_ip} 会在后端渲染时替换为服务器的真实 IP
+        const ip = "${lan_ip}";
+        const user = "${SSH_USER}"; 
+        const command = \`ssh -N -L 18789:127.0.0.1:18789 \${user}@\${ip}\`;
+        
+        // 复制到剪贴板
+        navigator.clipboard.writeText(command).then(() => {
+          alert("SSH command is copied to clipboard\\n\\n" + command);
+        }).catch(err => {
+          console.error('Can't copy to clipboard: ', err);
+          alert("Copy failed");
+        });
+      }
+    </script>
 
     <footer>Powered by Node.js + Express + Cloudflare Tunnel</footer>
   </body>
